@@ -1,0 +1,31 @@
+{
+  "location": "Nashik, Maharashtra",
+  "helplines": [
+    {
+      "name": "AASRA",
+      "number": "9820466726",
+      "type": "24/7 Suicide Prevention & Counseling",
+      "description": "Operating out of Navi Mumbai but serving the entire Maharashtra region, AASRA provides crisis intervention."
+    },
+    {
+      "name": "iCall",
+      "number": "9152987821",
+      "type": "Psychosocial Helpline",
+      "description": "Initiative by TISS providing free telephone counseling."
+    },
+    {
+      "name": "Vandrevala Foundation",
+      "number": "9999 666 555",
+      "type": "24/7 Mental Health Helpline",
+      "description": "Free psychological counseling and crisis intervention."
+    }
+  ],
+  "local_ngos": [
+    {
+      "name": "Nashik Mental Health Forum",
+      "type": "Local Support Group",
+      "description": "A community connect focusing on mental well-being in the Nashik area."
+    }
+  ],
+  "therapists_note": "I'm an AI, but there are great counselors right here in Nashik if you need to talk to a human. Would you like me to share contact details for clinical psychologists in Nashik?"
+}
