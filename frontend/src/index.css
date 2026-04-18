@@ -271,3 +271,80 @@ body {
   opacity: 0.3;
   cursor: not-allowed;
 }
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .chat-container {
+    height: 100vh;
+    padding: 0 10px;
+  }
+
+  .top-header {
+    padding: 12px 20px;
+    margin: 10px auto 20px auto;
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .top-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .robot-mascot {
+    width: 50px;
+    height: 50px;
+    right: 15px;
+    top: -10px;
+  }
+
+  .messages-area {
+    padding: 10px 10px 20px;
+    gap: 20px;
+  }
+
+  .messages-area::before {
+    left: 20px;
+  }
+
+  .message-wrapper {
+    max-width: 85%;
+  }
+
+  .message-wrapper.bot {
+    align-items: flex-start;
+  }
+
+  .message-wrapper.user {
+    align-items: flex-end;
+  }
+
+  .bubble {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+
+  .input-area {
+    margin: 10px 0 15px;
+    border-radius: 15px;
+  }
+
+  .chat-input {
+    font-size: 1rem;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-header h1 {
+    font-size: 1rem;
+    max-width: 70%;
+  }
+  
+  .robot-mascot {
+    width: 40px;
+    height: 40px;
+  }
+
+  .message-wrapper {
+    max-width: 90%;
+  }
+}
