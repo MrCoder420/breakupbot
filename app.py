@@ -18,8 +18,8 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from pymongo import MongoClient
 import certifi
 
-# Remote embeddings from HuggingFace Inference API (Fixes Render Out-Of-Memory error)
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+# Remote embeddings from HuggingFace (Production Mode - Required for Render)
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
 from personality import get_chat_prompt
 
@@ -63,10 +63,17 @@ class ChatRequest(BaseModel):
 # ── Init DB Connections ───────────────────────────────────────────────────────
 print("Loading Chroma vector store from ./chroma_db ...")
 print("Connecting to HuggingFace Inference API for embeddings...")
-embeddings = HuggingFaceInferenceAPIEmbeddings(
-    api_key=HF_TOKEN,
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
+embeddings = HuggingFaceEndpointEmbeddings(
+    huggingfacehub_api_token=HF_TOKEN,
+    model="BAAI/bge-small-en-v1.5"
 )
+
+# Health Check for Render
+@app.get("/")
+@app.head("/")
+async def root():
+    return {"status": "online", "bot": "Eleanor Mind", "knowledge_base": "ready"}
+
 try:
     vectorstore = Chroma(
         embedding_function=embeddings,

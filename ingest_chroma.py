@@ -105,8 +105,11 @@ def main():
         if item.get("text", "").strip()
     ]
 
-    print(f"\nLoading embedding model (all-MiniLM-L6-v2) ...")
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    from langchain_huggingface import HuggingFaceEndpointEmbeddings
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=os.getenv("HF_TOKEN"),
+        model="BAAI/bge-small-en-v1.5"
+    )
 
     # Wipe old DB
     if os.path.exists(CHROMA_DIR):
