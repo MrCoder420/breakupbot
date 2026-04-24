@@ -94,11 +94,26 @@ except Exception as e:
 
 @app.get("/test-db")
 async def test_db():
+    results = {}
     try:
         mongo_client.admin.command('ping')
-        return {"status": "success", "message": "MongoDB is reachable from Render"}
+        results["mongo"] = "SUCCESS"
     except Exception as e:
-        return {"status": "error", "message": str(e), "uri_masked": MONGO_URI[:15] + "..." if MONGO_URI else "NONE"}
+        results["mongo"] = f"FAILED: {e}"
+        
+    try:
+        from jose import jwt
+        results["jose"] = "SUCCESS"
+    except Exception as e:
+        results["jose"] = f"FAILED: {e}"
+        
+    try:
+        from passlib.context import CryptContext
+        results["passlib"] = "SUCCESS"
+    except Exception as e:
+        results["passlib"] = f"FAILED: {e}"
+        
+    return results
 
 mongo_client = (
     MongoClient(MONGO_URI, tlsCAFile=certifi.where())
