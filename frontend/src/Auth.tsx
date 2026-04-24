@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, UserPlus, LogIn } from 'lucide-react';
 
-const API_BASE = `http://${window.location.hostname}:8000`;
+const API_BASE = 'https://breakup-bot-backend.onrender.com';
 
 type AuthProps = {
   onAuth: (token: string, username: string) => void;
