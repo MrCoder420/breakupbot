@@ -92,6 +92,14 @@ except Exception as e:
     retriever = None
 
 
+@app.get("/test-db")
+async def test_db():
+    try:
+        mongo_client.admin.command('ping')
+        return {"status": "success", "message": "MongoDB is reachable from Render"}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "uri_masked": MONGO_URI[:15] + "..." if MONGO_URI else "NONE"}
+
 mongo_client = (
     MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     if MONGO_URI.startswith("mongodb+srv")
