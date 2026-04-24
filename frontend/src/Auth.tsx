@@ -98,7 +98,7 @@ export default function Auth({ onAuth }: AuthProps) {
           >
             <Bot size={40} color="#fff" />
           </div>
-          <h1 style={{ fontSize: '1.8rem' }}>Breakup <span>Bot</span></h1>
+          <h1 style={{ fontSize: '1.8rem' }}>Eleanor <span>Mind</span></h1>
           <p style={{ color: '#a497bd', fontSize: '0.9rem', textAlign: 'center' }}>
             {isLogin ? 'Welcome back. I am here for you.' : 'Create an account to start healing.'}
           </p>
