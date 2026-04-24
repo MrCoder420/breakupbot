@@ -26,9 +26,14 @@ from personality import get_chat_prompt
 load_dotenv()
 
 # ── Env ──────────────────────────────────────────────────────────────────────
-MONGO_URI    = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI    = os.getenv("MONGO_URI")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 HF_TOKEN     = os.getenv("HF_TOKEN", "")
+
+if not MONGO_URI:
+    print("❌ ERROR: MONGO_URI is not set in environment variables!")
+if not GROQ_API_KEY:
+    print("❌ ERROR: GROQ_API_KEY is not set in environment variables!")
 if HF_TOKEN:
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
