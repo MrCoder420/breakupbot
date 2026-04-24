@@ -8,7 +8,7 @@ type Message = {
   content: string;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE || `${window.location.protocol}//${window.location.hostname}:8000`;
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://breakup-bot-backend.onrender.com';
 
 const WELCOME_MSG: Message = {
   id: 'welcome',
