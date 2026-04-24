@@ -2,7 +2,6 @@ fastapi
 uvicorn
 requests
 beautifulsoup4
-lxml
 langchain
 langchain-groq
 langchain-mongodb
@@ -11,8 +10,7 @@ langchain-huggingface
 langchain-text-splitters
 pymongo
 python-dotenv
-sentence-transformers
 langchain-community
-datasets
 python-jose[cryptography]
 passlib[bcrypt]
+certifi
