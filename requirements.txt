@@ -12,9 +12,7 @@ langchain-text-splitters
 pymongo
 gunicorn
 python-dotenv
-sentence-transformers
 langchain-community
-datasets
 python-jose[cryptography]
 passlib[bcrypt]
 certifi
