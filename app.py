@@ -72,16 +72,7 @@ embeddings = HuggingFaceEndpointEmbeddings(
 @app.get("/")
 @app.head("/")
 async def root():
-    return {
-        "status": "online", 
-        "bot": "Eleanor Mind", 
-        "env_check": {
-            "GROQ": "SET" if GROQ_API_KEY else "MISSING",
-            "MONGO": f"{os.getenv('MONGO_URI')[:15]}...{os.getenv('MONGO_URI')[-5:]}" if os.getenv("MONGO_URI") else "MISSING",
-            "HF": "SET" if HF_TOKEN else "MISSING",
-            "JWT": "SET" if os.getenv("JWT_SECRET_KEY") else "MISSING"
-        }
-    }
+    return {"status": "online", "bot": "Eleanor Mind", "knowledge_base": "ready"}
 
 try:
     vectorstore = Chroma(
@@ -159,7 +150,7 @@ async def register(auth: UserAuth):
         return {"message": "User created successfully"}
     except Exception as e:
         print(f"REGISTRATION ERROR: {e}")
-        return {"error_debug": str(e), "tip": "Check MongoDB IP Whitelist (0.0.0.0/0)"}
+        raise HTTPException(status_code=500, detail="Internal Server Error during registration")
 
 
 @app.post("/login")
