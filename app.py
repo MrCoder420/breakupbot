@@ -150,7 +150,7 @@ async def register(auth: UserAuth):
         return {"message": "User created successfully"}
     except Exception as e:
         print(f"REGISTRATION ERROR: {e}")
-        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+        return {"error_debug": str(e), "tip": "Check MongoDB IP Whitelist (0.0.0.0/0)"}
 
 
 @app.post("/login")
