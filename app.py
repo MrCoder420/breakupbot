@@ -149,8 +149,10 @@ async def register(auth: UserAuth):
         })
         return {"message": "User created successfully"}
     except Exception as e:
-        print(f"REGISTRATION ERROR: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error during registration")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"CRITICAL DB ERROR:\n{error_trace}")
+        raise HTTPException(status_code=500, detail=f"DB Error: {str(e)}")
 
 
 @app.post("/login")
