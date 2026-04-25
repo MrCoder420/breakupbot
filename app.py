@@ -77,7 +77,7 @@ async def root():
         "bot": "Eleanor Mind", 
         "env_check": {
             "GROQ": "SET" if GROQ_API_KEY else "MISSING",
-            "MONGO": "SET" if os.getenv("MONGO_URI") else "MISSING",
+            "MONGO": f"{os.getenv('MONGO_URI')[:15]}...{os.getenv('MONGO_URI')[-5:]}" if os.getenv("MONGO_URI") else "MISSING",
             "HF": "SET" if HF_TOKEN else "MISSING",
             "JWT": "SET" if os.getenv("JWT_SECRET_KEY") else "MISSING"
         }
