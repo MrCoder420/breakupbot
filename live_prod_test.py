@@ -15,6 +15,9 @@ def live_test():
     try:
         r = requests.post(f"{base}/register", json={"username": user, "password": pwd}, timeout=30)
         print(f"   Status: {r.status_code}")
+        if r.status_code != 200:
+            print(f"   ERROR DETAIL: {r.text}")
+            return
     except Exception as e:
         print(f"   Error: {e}")
         return

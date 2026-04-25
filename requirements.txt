@@ -18,3 +18,4 @@ datasets
 python-jose[cryptography]
 passlib[bcrypt]
 certifi
+dnspython
