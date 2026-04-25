@@ -136,17 +136,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 # ── Auth Endpoints ────────────────────────────────────────────────────────────
 
 @app.post("/register")
-async def register(user: UserAuth):
-    if users_collection.find_one({"username": user.username}):
-        raise HTTPException(status_code=400, detail="Username already registered")
+async def register(auth: UserAuth):
+    try:
+        if users_collection.find_one({"username": auth.username}):
+            raise HTTPException(status_code=400, detail="Username already exists")
         
-    hashed_password = get_password_hash(user.password)
-    new_user = {
-        "username": user.username,
-        "hashed_password": hashed_password
-    }
-    users_collection.insert_one(new_user)
-    return {"message": "User registered successfully"}
+        hashed_password = get_password_hash(auth.password)
+        users_collection.insert_one({
+            "username": auth.username,
+            "password": hashed_password,
+            "created_at": datetime.utcnow()
+        })
+        return {"message": "User created successfully"}
+    except Exception as e:
+        print(f"REGISTRATION ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/login")
