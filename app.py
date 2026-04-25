@@ -144,26 +144,34 @@ async def register(auth: UserAuth):
         hashed_password = get_password_hash(auth.password)
         users_collection.insert_one({
             "username": auth.username,
-            "password": hashed_password,
+            "hashed_password": hashed_password,
             "created_at": datetime.utcnow()
         })
         return {"message": "User created successfully"}
     except Exception as e:
         print(f"REGISTRATION ERROR: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
 
 @app.post("/login")
 async def login(user: UserAuth):
-    db_user = users_collection.find_one({"username": user.username})
-    if not db_user or not verify_password(user.password, db_user["hashed_password"]):
-        raise HTTPException(status_code=401, detail="Incorrect username or password")
-        
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer", "username": user.username}
+    try:
+        db_user = users_collection.find_one({"username": user.username})
+        if not db_user:
+            raise HTTPException(status_code=401, detail="User not found")
+            
+        if not verify_password(user.password, db_user["hashed_password"]):
+            raise HTTPException(status_code=401, detail="Incorrect password")
+            
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer", "username": user.username}
+    except Exception as e:
+        print(f"LOGIN ERROR: {e}")
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=f"Auth Error: {str(e)}")
 
 
 # ── Init LLM ──────────────────────────────────────────────────────────────────
