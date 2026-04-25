@@ -72,7 +72,16 @@ embeddings = HuggingFaceEndpointEmbeddings(
 @app.get("/")
 @app.head("/")
 async def root():
-    return {"status": "online", "bot": "Eleanor Mind", "knowledge_base": "ready"}
+    return {
+        "status": "online", 
+        "bot": "Eleanor Mind", 
+        "env_check": {
+            "GROQ": "SET" if GROQ_API_KEY else "MISSING",
+            "MONGO": "SET" if os.getenv("MONGO_URI") else "MISSING",
+            "HF": "SET" if HF_TOKEN else "MISSING",
+            "JWT": "SET" if os.getenv("JWT_SECRET_KEY") else "MISSING"
+        }
+    }
 
 try:
     vectorstore = Chroma(
