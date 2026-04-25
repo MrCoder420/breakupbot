@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, UserPlus, LogIn } from 'lucide-react';
 
-const API_BASE = 'https://breakup-bot-backend.onrender.com';
+const API_BASE = `http://${window.location.hostname}:8000`;
 
 type AuthProps = {
   onAuth: (token: string, username: string) => void;
@@ -71,15 +71,7 @@ export default function Auth({ onAuth }: AuthProps) {
   return (
     <div className="chat-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
       <div 
-        className="top-header" 
-        style={{ 
-          margin: '0', 
-          width: '100%', 
-          maxWidth: '400px', 
-          flexDirection: 'column',
-          padding: '40px',
-          gap: '20px'
-        }}
+        className="auth-card" 
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
           <div
@@ -98,7 +90,7 @@ export default function Auth({ onAuth }: AuthProps) {
           >
             <Bot size={40} color="#fff" />
           </div>
-          <h1 style={{ fontSize: '1.8rem' }}>Eleanor <span>Mind</span></h1>
+          <h1 style={{ fontSize: '1.8rem' }}>Breakup <span>Bot</span></h1>
           <p style={{ color: '#a497bd', fontSize: '0.9rem', textAlign: 'center' }}>
             {isLogin ? 'Welcome back. I am here for you.' : 'Create an account to start healing.'}
           </p>

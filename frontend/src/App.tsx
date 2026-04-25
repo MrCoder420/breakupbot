@@ -8,8 +8,7 @@ type Message = {
   content: string;
 };
 
-// Eleanor Mind - Production Build v2.0.1 (Fixed Backend URL)
-const API_BASE = 'https://breakup-bot-backend.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:8000`;
 
 const WELCOME_MSG: Message = {
   id: 'welcome',

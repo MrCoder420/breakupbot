@@ -26,14 +26,9 @@ from personality import get_chat_prompt
 load_dotenv()
 
 # ── Env ──────────────────────────────────────────────────────────────────────
-MONGO_URI    = os.getenv("MONGO_URI")
+MONGO_URI    = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 HF_TOKEN     = os.getenv("HF_TOKEN", "")
-
-if not MONGO_URI:
-    print("❌ ERROR: MONGO_URI is not set in environment variables!")
-if not GROQ_API_KEY:
-    print("❌ ERROR: GROQ_API_KEY is not set in environment variables!")
 if HF_TOKEN:
     os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
@@ -92,29 +87,6 @@ except Exception as e:
     retriever = None
 
 
-@app.get("/test-db")
-async def test_db():
-    results = {}
-    try:
-        mongo_client.admin.command('ping')
-        results["mongo"] = "SUCCESS"
-    except Exception as e:
-        results["mongo"] = f"FAILED: {e}"
-        
-    try:
-        from jose import jwt
-        results["jose"] = "SUCCESS"
-    except Exception as e:
-        results["jose"] = f"FAILED: {e}"
-        
-    try:
-        from passlib.context import CryptContext
-        results["passlib"] = "SUCCESS"
-    except Exception as e:
-        results["passlib"] = f"FAILED: {e}"
-        
-    return results
-
 mongo_client = (
     MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     if MONGO_URI.startswith("mongodb+srv")
@@ -126,10 +98,10 @@ users_collection = db.users
 # ── Auth Utilities ────────────────────────────────────────────────────────────
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password[:72], hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    return pwd_context.hash(password[:72])
+    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -165,19 +137,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @app.post("/register")
 async def register(user: UserAuth):
-    try:
-        if users_collection.find_one({"username": user.username}):
-            raise HTTPException(status_code=400, detail="Username already registered")
-            
-        hashed_password = get_password_hash(user.password)
-        new_user = {
-            "username": user.username,
-            "hashed_password": hashed_password
-        }
-        users_collection.insert_one(new_user)
-        return {"message": "User registered successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DB Error: {str(e)}")
+    if users_collection.find_one({"username": user.username}):
+        raise HTTPException(status_code=400, detail="Username already registered")
+        
+    hashed_password = get_password_hash(user.password)
+    new_user = {
+        "username": user.username,
+        "hashed_password": hashed_password
+    }
+    users_collection.insert_one(new_user)
+    return {"message": "User registered successfully"}
 
 
 @app.post("/login")
