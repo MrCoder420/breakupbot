@@ -14,6 +14,6 @@ gunicorn
 python-dotenv
 langchain-community
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 certifi
 dnspython
