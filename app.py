@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
+import razorpay
+import hmac
+import hashlib
 
 from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
@@ -38,6 +41,12 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "b9d28a3f890e4f8d951f08bd9ea6b1bb348a47
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
+# Razorpay Config
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Breakup Bot API")
 
@@ -59,7 +68,11 @@ class UserAuth(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    # session_id is no longer provided by frontend. We infer it from the logged-in user.
+
+class PaymentVerify(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
 # ── Init DB Connections ───────────────────────────────────────────────────────
 print("Loading Chroma vector store from ./chroma_db ...")
@@ -147,6 +160,9 @@ async def register(auth: UserAuth):
         users_collection.insert_one({
             "username": auth.username,
             "hashed_password": hashed_password,
+            "free_messages_left": 20,
+            "is_subscribed": False,
+            "subscription_expiry": None,
             "created_at": datetime.utcnow()
         })
         return {"message": "User created successfully"}
@@ -231,15 +247,102 @@ async def chat_endpoint(req: ChatRequest, current_user: str = Depends(get_curren
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY not set in .env")
 
+    user_data = users_collection.find_one({"username": current_user})
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_subscribed = user_data.get("is_subscribed", False)
+    free_left = user_data.get("free_messages_left", 0)
+
+    # Check for active subscription
+    if is_subscribed:
+        expiry = user_data.get("subscription_expiry")
+        if expiry and datetime.utcnow() > expiry:
+            is_subscribed = False
+            users_collection.update_one({"username": current_user}, {"$set": {"is_subscribed": False}})
+
+    if not is_subscribed and free_left <= 0:
+        raise HTTPException(
+            status_code=402, 
+            detail="Free message limit reached. Please subscribe for ₹1/month for unlimited access."
+        )
+
     try:
-        # The user's individual chat history is keyed purely off their authenticated username
         response = chain_with_history.invoke(
             {"input": req.message},
             config={"configurable": {"session_id": current_user}},
         )
-        return {"response": response}
+        
+        # Decrement free messages if not subscribed
+        if not is_subscribed:
+            users_collection.update_one(
+                {"username": current_user}, 
+                {"$inc": {"free_messages_left": -1}}
+            )
+
+        return {"response": response, "free_messages_left": max(0, free_left - 1) if not is_subscribed else "unlimited"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/user-status")
+async def get_user_status(current_user: str = Depends(get_current_user)):
+    user_data = users_collection.find_one({"username": current_user})
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "is_subscribed": user_data.get("is_subscribed", False),
+        "free_messages_left": user_data.get("free_messages_left", 0),
+        "subscription_expiry": user_data.get("subscription_expiry")
+    }
+
+
+# ── Payment Endpoints ─────────────────────────────────────────────────────────
+
+@app.post("/create-order")
+async def create_order(current_user: str = Depends(get_current_user)):
+    try:
+        # ₹1 subscription (100 paise)
+        order_amount = 100 
+        order_currency = 'INR'
+        order_receipt = f"receipt_{current_user}_{int(datetime.utcnow().timestamp())}"
+        
+        order = razorpay_client.order.create({
+            'amount': order_amount,
+            'currency': order_currency,
+            'receipt': order_receipt,
+            'payment_capture': 1
+        })
+        return order
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment Order Error: {str(e)}")
+
+
+@app.post("/verify-payment")
+async def verify_payment(data: PaymentVerify, current_user: str = Depends(get_current_user)):
+    try:
+        # Verify the signature
+        params_dict = {
+            'razorpay_order_id': data.razorpay_order_id,
+            'razorpay_payment_id': data.razorpay_payment_id,
+            'razorpay_signature': data.razorpay_signature
+        }
+        
+        razorpay_client.utility.verify_payment_signature(params_dict)
+        
+        # If verification succeeds, update user subscription
+        expiry_date = datetime.utcnow() + timedelta(days=30)
+        users_collection.update_one(
+            {"username": current_user},
+            {"$set": {
+                "is_subscribed": True,
+                "subscription_expiry": expiry_date
+            }}
+        )
+        return {"status": "success", "message": "Subscription activated for 30 days!"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Payment verification failed")
 
 
 @app.get("/history")
