@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Bot, UserPlus, LogIn } from 'lucide-react';
+import Policies from './Policies';
 
 const API_BASE = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:8000`;
 
@@ -163,6 +164,8 @@ export default function Auth({ onAuth }: AuthProps) {
         >
           {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
         </button>
+
+        <Policies />
       </div>
     </div>
   );
