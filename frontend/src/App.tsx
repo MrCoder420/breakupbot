@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Copy, Bot, User, LogOut } from 'lucide-react';
+import { Send, Copy, Bot, User, LogOut, Crown, Sparkles, CheckCircle } from 'lucide-react';
 import Auth from './Auth';
 
 type Message = {
@@ -23,6 +23,9 @@ function App() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [userStatus, setUserStatus] = useState<{is_subscribed: boolean, free_messages_left: number | string} | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleAuth = (newToken: string, newUsername: string) => {
@@ -85,7 +88,80 @@ function App() {
     };
     
     loadHistory();
+    fetchStatus();
   }, [token]);
+
+  const fetchStatus = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/user-status`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatus(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user status", err);
+    }
+  };
+
+  const handlePayment = async () => {
+    setPaymentLoading(true);
+    try {
+      // 1. Create order on backend
+      const orderRes = await fetch(`${API_BASE}/create-order`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const order = await orderRes.json();
+
+      // 2. Open Razorpay
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SkNrgfRhiwhDPK",
+        amount: order.amount,
+        currency: order.currency,
+        name: "Eleanor Mind Premium",
+        description: "Unlimited chats for 30 days",
+        order_id: order.id,
+        handler: async (response: any) => {
+          // 3. Verify payment
+          const verifyRes = await fetch(`${API_BASE}/verify-payment`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+
+          if (verifyRes.ok) {
+            setShowPaywall(false);
+            fetchStatus();
+            alert("Subscription Activated! Enjoy unlimited healing.");
+          }
+        },
+        prefill: {
+          name: username,
+        },
+        theme: {
+          color: "#8b5cf6",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      alert("Payment failed to initialize. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -110,6 +186,12 @@ function App() {
         body: JSON.stringify({ message: userMsg.content }),
       });
 
+      if (res.status === 402) {
+        setShowPaywall(true);
+        setIsTyping(false);
+        return;
+      }
+
       if (res.status === 401) {
         handleLogout();
         throw new Error('Session expired. Please log in again.');
@@ -129,6 +211,7 @@ function App() {
           { id: Date.now().toString(), role: 'bot', content: data.response },
         ]);
         setIsTyping(false);
+        fetchStatus(); // Update message count after bot reply
       }, typingDelay);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
@@ -157,6 +240,13 @@ function App() {
         <h1>Chat With <span>Eleanor Mind!</span></h1>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <div className="user-status-pill">
+            {userStatus?.is_subscribed ? (
+              <span className="premium-label"><Crown size={12} /> Premium</span>
+            ) : (
+              <span className="free-label">{userStatus?.free_messages_left} free left</span>
+            )}
+          </div>
           <span style={{ color: '#a497bd', fontSize: '0.9rem' }}>{username}</span>
           <button 
             onClick={handleLogout}
@@ -265,6 +355,42 @@ function App() {
           </button>
         </form>
       </div>
+
+      {/* Paywall Modal */}
+      {showPaywall && (
+        <div className="modal-overlay">
+          <div className="paywall-card">
+            <div className="paywall-header">
+              <div className="crown-icon">
+                <Crown size={40} />
+              </div>
+              <h2>Heal Without Limits</h2>
+              <p>You've used all your free messages. Support Eleanor and unlock unlimited emotional support.</p>
+            </div>
+            
+            <div className="features-list">
+              <div className="feature-item"><CheckCircle size={18} color="#10b981" /> <span>Unlimited Chat History</span></div>
+              <div className="feature-item"><CheckCircle size={18} color="#10b981" /> <span>Faster AI Responses</span></div>
+              <div className="feature-item"><CheckCircle size={18} color="#10b981" /> <span>Deep Clinical Empathy</span></div>
+            </div>
+
+            <div className="pricing-box">
+              <div className="price">₹1<span>/month</span></div>
+              <button 
+                className="subscribe-button" 
+                onClick={handlePayment}
+                disabled={paymentLoading}
+              >
+                {paymentLoading ? "Processing..." : "Unlock Everything"}
+                <Sparkles size={18} />
+              </button>
+              <p className="cancel-anytime">Secure Payment via Razorpay</p>
+            </div>
+            
+            <button className="close-link" onClick={() => setShowPaywall(false)}>Maybe Later</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
